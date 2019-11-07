@@ -1,0 +1,3 @@
+[submodule "public/cryptocurrency-icons"]
+	path = public/cryptocurrency-icons
+	url = https://github.com/atomiclabs/cryptocurrency-icons
