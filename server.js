@@ -6,8 +6,8 @@ const { JSDOM } = jsdom;
 const { document } = (new JSDOM('')).window;
 const fs = require('fs');
 const path = require('path');
-
-
+const debug = true;
+const hitCountKey = 'apiHitCount';
 app.use(express.static(__dirname + '/public'));
 
 // GET Home page
@@ -81,24 +81,30 @@ async function generatePNG(req, res, redis) {
   const filename = currency + '-' + style + '-' + size + '.png';
 
   // SVG file path
+  if (debug) console.log('1');
   const svgPath = path.join(__dirname, 'public', 'cryptocurrency-icons', 'svg', style, currency + '.svg');
+  console.log('svgPath: ', svgPath);
 
   // Check if file exists
+  if (debug) console.log('2');
   if (!fs.existsSync(svgPath)) {
     res.status(404).send(null);
     return
   }
 
+  if (debug) console.log('3');
   const svg = fs.readFileSync(svgPath, 'utf8');
   const element = document.createElement('div');
   element.innerHTML = svg;
 
+  if (debug) console.log('4');
   const svgElement = element.getElementsByTagName("svg")[0];
 
   // Define the circles
   const colorCircle = element.getElementsByTagName("circle")[0];
   const iconCircle = element.getElementsByTagName("use")[1];
 
+  if (debug) console.log('5');
   // Set viewBox so SVG resizes correctly
   const originalSize = svgElement.getAttribute('width');
   svgElement.setAttribute('viewBox', '0 0 ' + originalSize + ' ' + originalSize);
@@ -107,6 +113,7 @@ async function generatePNG(req, res, redis) {
   svgElement.setAttribute('width', size);
   svgElement.setAttribute('height', size);
 
+  if (debug) console.log('6');
   // Set circle color, if `color` or `icon`
   if (color != null && style == 'color') {
     const colorString = '#' + color;
@@ -116,6 +123,7 @@ async function generatePNG(req, res, redis) {
     iconCircle.setAttribute('fill', colorString)
   }
 
+  if (debug) console.log('7');
   // Convert to PNG
   const png = await convert(element.innerHTML, {
     'height' : size,
@@ -127,7 +135,8 @@ async function generatePNG(req, res, redis) {
   if (redis != null) {
     redis.set(cacheKey, png, function(err) {
       redis.quit()
-    })
+    });
+    redis.incr(hitCountKey);
   }
 
   // Return response
